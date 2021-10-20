@@ -1,0 +1,44 @@
+GET https://sleepy-stream-22657.herokuapp.com/vouchers
+
+###
+
+POST https://sleepy-stream-22657.herokuapp.com/vouchers
+content-type: application/json
+
+{
+    "name": "DBSPAYLAH40",
+    "point": "200"
+}
+
+###
+
+GET https://sleepy-stream-22657.herokuapp.com/redeem?voucher=DBSPAYLAH10&&customer=deepak&&point=50
+
+###
+GET https://sleepy-stream-22657.herokuapp.com/issue?customer=deepak&&point=150
+
+
+###
+
+GET https://sleepy-stream-22657.herokuapp.com/getRewardState
+
+###
+
+GET https://sleepy-stream-22657.herokuapp.com/getRedemptionState
+
+## PROD URLS(Proxy)
+
+GET https://sleepy-stream-22657.herokuapp.com/proxy/getRewardState
+
+###
+
+GET https://sleepy-stream-22657.herokuapp.com/proxy/getRedemptionState
+
+###
+
+GET https://sleepy-stream-22657.herokuapp.com/proxy/redeem?voucher=DBSPAYLAH10&&customer=deepak&&point=50
+
+###
+GET https://sleepy-stream-22657.herokuapp.com/proxy/issue?customer=deepak&&point=150
+
+

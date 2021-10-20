@@ -13,10 +13,9 @@
   "keywords": [],
   "author": "xdeepakv",
   "license": "ISC",
-  "devDependencies": {
-    "json-server": "^0.17.0"
-  },
+  "devDependencies": {},
   "dependencies": {
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "json-server": "^0.17.0"
   }
 }

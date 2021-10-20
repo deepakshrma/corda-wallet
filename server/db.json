@@ -1,4 +1,22 @@
 {
+  "vouchers": [
+    {
+      "name": "DBSPAYLAH10",
+      "point": "50"
+    },
+    {
+      "name": "DBSPAYLAH20",
+      "point": "100"
+    },
+    {
+      "name": "DBSPAYLAH30",
+      "point": "150"
+    },
+    {
+      "name": "DBSSHOP15",
+      "point": "50"
+    }
+  ],
   "getRewardState": [
     {
       "customer": "Raymond",

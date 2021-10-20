@@ -2,10 +2,19 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
+//Local
+// const hostName = "http://localhost:3000";
+// const hostNameLocal = "http://localhost:3000";
+
+//Prod
+const hostName = "https://sleepy-stream-22657.herokuapp.com/proxy";
+const hostNameLocal = "https://sleepy-stream-22657.herokuapp.com";
 
 class Reward {
   final String customer;
@@ -52,7 +61,36 @@ class Redeem {
   }
 }
 
-const hostName = "http://18.140.71.165:9090";
+class Voucher {
+  final String name;
+  final String point;
+
+  Voucher({required this.name, required this.point});
+
+  factory Voucher.fromJson(Map<String, dynamic> json) {
+    return Voucher(
+      name: json['name'],
+      point: json['point'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['name'] = this.name;
+    data['point'] = this.point;
+    return data;
+  }
+}
+
+Future<List<Voucher>> fetchVouchers() async {
+  final response = await http.get(Uri.parse('$hostNameLocal/vouchers'));
+  if (response.statusCode >= 200 && response.statusCode < 300) {
+    var responseJson = json.decode(response.body);
+    return (responseJson as List).map((p) => Voucher.fromJson(p)).toList();
+  } else {
+    throw Exception('Failed to load album');
+  }
+}
 
 Future<List<Redeem>> fetchRedemption(String customer) async {
   final response = await http
@@ -76,6 +114,26 @@ Future<Reward> createIssue(String customer, String point) async {
   if (response.statusCode >= 200 && response.statusCode < 300) {
     // then parse the JSON.
     return Reward(customer: customer, point: point);
+  } else {
+    throw Exception('Failed to create album.');
+  }
+}
+
+Future<Voucher> createVoucher(String name, String point) async {
+  print("$name, $point");
+  final response = await http.post(
+      Uri.parse('$hostNameLocal/vouchers?customer=$name&point=$point'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'name': name,
+        'point': point,
+      }));
+
+  if (response.statusCode >= 200 && response.statusCode < 300) {
+    // then parse the JSON.
+    return Voucher(name: name, point: point);
   } else {
     throw Exception('Failed to create album.');
   }
@@ -157,61 +215,136 @@ class _TransactionScreen extends State<TransactionScreen> {
   }
 }
 
-class RedeemScreen extends StatelessWidget {
+class RedeemScreen extends StatefulWidget {
   final String username;
   const RedeemScreen({Key? key, required this.username}) : super(key: key);
 
   @override
+  _RedeemScreen createState() => _RedeemScreen();
+}
+
+@immutable
+class _RedeemScreen extends State<RedeemScreen> {
+  late Future<List<Voucher>> futureVoucher;
+  @override
+  void initState() {
+    super.initState();
+    futureVoucher = fetchVouchers();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    List<Redeem> vouchers = (List.from(<int>[10, 20, 30]))
-        .map((e) =>
-            Redeem(voucher: "NTUC$e", point: "${e * 5}", customer: username))
-        .toList();
     return Scaffold(
         appBar: AppBar(
           title: const Text("Readem Vouchers"),
         ),
-        body: ListView.builder(
-          itemCount: vouchers.length,
-          itemBuilder: (context, index) {
-            Redeem voucher = vouchers[index];
-            return Card(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ListTile(
-                    leading: Image.asset("images/ntuc.png"),
-                    title: Text(voucher.voucher),
-                    subtitle: Text("Points: ${voucher.point}"),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      TextButton(
-                        child: const Text('REDEEM'),
-                        onPressed: () {
-                          createRedeem(voucher.customer, voucher.point,
-                                  voucher.voucher)
-                              .then((value) => {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => TransactionScreen(
-                                          username: username,
-                                        ),
-                                      ),
-                                    )
-                                  })
-                              .catchError((e) {
-                            return null; // Future completes with 42.
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
+        body: FutureBuilder<List<Voucher>>(
+          future: futureVoucher,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) return Text("${snapshot.error}");
+            if (snapshot.hasData) {
+              List<Voucher> items = (snapshot.data as List<Voucher>);
+              return ListView.builder(
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  Voucher voucher = items[index];
+                  return Card(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        ListTile(
+                          leading: Image.asset("images/paylah_log.png"),
+                          title: Text(voucher.name),
+                          subtitle: Text("Points: ${voucher.point}"),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            TextButton(
+                              child: const Text('REDEEM'),
+                              onPressed: () {
+                                createRedeem(
+                                  widget.username,
+                                  voucher.point,
+                                  voucher.name,
+                                )
+                                    .then((value) => {
+                                          showDialog<String>(
+                                              context: context,
+                                              builder: (BuildContext context) =>
+                                                  AlertDialog(
+                                                    title:
+                                                        const Text('Redeem OK'),
+                                                    content: Text(
+                                                        'Your transaction has been completed successfully!',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        )),
+                                                    actions: <Widget>[
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                                context,
+                                                                'Cancel'),
+                                                        child: const Text(
+                                                            'Cancel'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                                context, 'OK'),
+                                                        child: const Text('OK'),
+                                                      ),
+                                                    ],
+                                                  )).then((value) => {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        TransactionScreen(
+                                                      username: widget.username,
+                                                    ),
+                                                  ),
+                                                )
+                                              })
+                                        })
+                                    .catchError((e) {
+                                  showDialog<String>(
+                                      context: context,
+                                      builder: (BuildContext context) =>
+                                          AlertDialog(
+                                            title: const Text('Server Error'),
+                                            content: Text('${e}',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.red)),
+                                            actions: <Widget>[
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                    context, 'Cancel'),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                    context, 'OK'),
+                                                child: const Text('OK'),
+                                              ),
+                                            ],
+                                          ));
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
           },
         ));
   }
@@ -380,11 +513,19 @@ class HomePage extends StatefulWidget {
 
 class _HomePageSate extends State<HomePage> {
   late Future<List<Reward>> futureRewards;
+  RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
   static const _actionTitles = ['Create Post', 'Upload Photo', 'Upload Video'];
   Map<String, TextEditingController> controllers = {
     "username": TextEditingController(),
     "point": TextEditingController()
   };
+  void _onRefresh() async {
+    setState(() {
+      futureRewards = fetchRewards(widget.user.username);
+    });
+    _refreshController.refreshCompleted();
+  }
 
   @override
   void initState() {
@@ -423,8 +564,10 @@ class _HomePageSate extends State<HomePage> {
                 ),
                 TextField(
                   controller: controllers["username"],
-                  decoration: const InputDecoration(
-                    hintText: 'Enter Username',
+                  decoration: InputDecoration(
+                    hintText: widget.user.username.contains("bank")
+                        ? 'Enter Username'
+                        : "Enter Voucher Code",
                   ),
                 ),
                 TextField(
@@ -435,9 +578,16 @@ class _HomePageSate extends State<HomePage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    createIssue(controllers["username"]?.text ?? "Raymond",
-                            controllers["point"]?.text ?? "100")
-                        .then((value) => {Navigator.of(context).pop()});
+                    if (widget.user.username.contains("bank")) {
+                      createIssue(controllers["username"]?.text ?? "deepak",
+                              controllers["point"]?.text ?? "100")
+                          .then((value) => {Navigator.of(context).pop()});
+                    } else {
+                      createVoucher(
+                              controllers["username"]?.text ?? "DBSSHOP30",
+                              controllers["point"]?.text ?? "100")
+                          .then((value) => {Navigator.of(context).pop()});
+                    }
                   },
                   child: Text(
                     "Issue",
@@ -491,30 +641,60 @@ class _HomePageSate extends State<HomePage> {
           ),
         ],
       ),
-      body: Center(
-        child: FutureBuilder<List<Reward>>(
-          future: futureRewards,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) return Text("${snapshot.error}");
-            if (snapshot.hasData) {
-              List<Reward> items = (snapshot.data as List<Reward>);
-              return RewardBoxList(
-                items: items,
-                username: widget.user.username,
-              );
+      body: SmartRefresher(
+        enablePullDown: true,
+        enablePullUp: true,
+        header: WaterDropHeader(),
+        footer: CustomFooter(
+          builder: (BuildContext context, LoadStatus? mode) {
+            Widget body;
+            if (mode == LoadStatus.idle) {
+              body = Text("pull up load");
             } else {
-              return const Center(child: CircularProgressIndicator());
+              body = Text("");
             }
+            return Container(
+              height: 55.0,
+              child: Center(child: body),
+            );
           },
         ),
+        controller: _refreshController,
+        onRefresh: _onRefresh,
+        child: Center(
+          child: FutureBuilder<List<Reward>>(
+            future: futureRewards,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) return Text("${snapshot.error}");
+              if (snapshot.hasData) {
+                List<Reward> items = (snapshot.data as List<Reward>);
+                return RewardBoxList(
+                  items: items,
+                  username: widget.user.username,
+                );
+              } else {
+                return const Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+        ),
       ),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           // Add your onPressed code here!
-          _displayDialog(context).then();
+          _displayDialog(context);
         },
-        label: const Text('Issue'),
-        icon: const Icon(Icons.edit),
+        label: Text(widget.user.username.contains("bank")
+            ? 'Issue'
+            : widget.user.username.contains("dbs")
+                ? "Vouchers"
+                : "Redeem"),
+        icon: Icon(widget.user.username.contains("bank")
+            ? Icons.edit
+            : widget.user.username.contains("dbs")
+                ? Icons.edit
+                : Icons.shopping_cart),
         backgroundColor: Colors.pink,
       ),
 
