@@ -1,0 +1,84 @@
+{
+  "getRewardState": [
+    {
+      "customer": "Raymond",
+      "point": "100"
+    },
+    {
+      "customer": "Raymond",
+      "point": "100"
+    }
+  ],
+  "getRedemptionState": [
+    {
+      "voucher": "NTUC $10",
+      "point": "10",
+      "customer": "Raymond"
+    },
+    {
+      "voucher": "NTUC10",
+      "point": "50",
+      "customer": "Raymond"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "Raymond"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "James"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "James"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "Biswo"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "Gilbert"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "Raymond"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "Test"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "Test2"
+    },
+    {
+      "voucher": "NTUC5",
+      "point": "30",
+      "customer": "Tester10"
+    },
+    {
+      "voucher": "NTUC30",
+      "point": "50",
+      "customer": "Tester20"
+    },
+    {
+      "voucher": "NTUC30",
+      "point": "50",
+      "customer": "Tester20"
+    },
+    {
+      "voucher": "NTUC100",
+      "point": "280",
+      "customer": "Tester20"
+    }
+  ]
+}
